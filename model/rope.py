@@ -2,7 +2,7 @@ import torch
 from typing import Tuple
 
 
-def get_meshgrid_nd(sizes, dim=2):
+def get_meshgrid_nd(sizes):
     """
     Get n-D meshgrid with given sizes.
 
@@ -46,8 +46,8 @@ def apply_rope(
     xq_ = torch.view_as_complex(
         xq.reshape(*xq.shape[:-1], -1, 2)
     )  # [B, S, H, D//2]
-    S, H = xq_.shape[1:3]
-    freqs_cis = freqs_cis.view(1, S, H, -1)  # [S, D//2] --> [1, S, H, D//(2H)]
+    S = xq_.shape[1]
+    freqs_cis = freqs_cis.view(1, S, 1, -1)  # [S, nD//2] --> [1, S, 1, nD//2]
     # view_as_real will expand [..., D/2](complex) to [..., D/2, 2](real)
     xq_out = torch.view_as_real(xq_ * freqs_cis).flatten(3).type_as(xq)
     xk_ = torch.view_as_complex(
@@ -73,7 +73,7 @@ def get_nd_rope(
         theta: Scaling factor for frequency computation.
 
     Returns:
-        emb: Positional embedding [HW, D/2]
+        emb: Positional embedding [S, D/2]
     """
     grid = get_meshgrid_nd(sizes)  # [n, T, H, W]
 
@@ -84,10 +84,10 @@ def get_nd_rope(
             dim_list[i],
             grid[i].reshape(-1),
             theta,
-        )  # [THW, D/2]
+        )  # [THW, D_i/2]
         embs.append(emb)
 
-    emb = torch.cat(embs, dim=1)  # (THW, nD/2)
+    emb = torch.cat(embs, dim=1)  # (THW, D/2)
     return emb
 
 

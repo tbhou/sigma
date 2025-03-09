@@ -2,7 +2,7 @@ import torch
 
 import unittest
 
-from model.rope import apply_rope, get_1d_rope, get_nd_rope
+from model.rope import apply_rope, get_1d_rope, get_nd_rope, get_meshgrid_nd
 
 
 class TestRope(unittest.TestCase):
@@ -14,11 +14,12 @@ class TestRope(unittest.TestCase):
         self.assertEqual(emb.shape, torch.Size([l, dim // 2]))
 
     def test_get_nd_rope(self):
-        T, H, W, dim = 8, 16, 16, 4
-        dim_list = [dim, dim, dim]
+        dim_list = [2, 2, 2]
+        dim = sum(dim_list)
+        T, H, W = 8, 16, 16
         sizes = [T, H, W]
         emb = get_nd_rope(dim_list, sizes)
-        self.assertEqual(emb.shape, torch.Size([T * H * W, 3 * dim // 2]))
+        self.assertEqual(emb.shape, torch.Size([T * H * W, dim // 2]))
 
     def test_apply_rope(self):
         B, S, H, D = 1, 16, 2, 4
