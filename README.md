@@ -1,4 +1,4 @@
-# Open Research of Generative AI
+# Σ-GenAI for Open Research
 
 This repo collects some latest research work of Generative AI. It provides simple implementations to understand the ideas and some follow-up discussions to inspire future work.
 
