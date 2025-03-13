@@ -21,3 +21,17 @@ Token compression provides an overview of the entire sequence. Uncompressed toke
 **Follow-up**
 
 MoE is efficient at inference when batch size is 1. If batch size is greater than 1, more experts will be activated, and it can take more memories than a dense model. To address this problem, ByteDance releases [Comet](https://arxiv.org/pdf/2502.19811), an efficient infrastructure for MoE.
+
+
+## Auto-Encoder
+
+Modern image and video generation models use CNN based auto-encoders (AEs), with the following limitations
+- Uniform compression. AEs compress an image or a video uniformly in spatial and temporal domain.
+- Not aligned with representations for understanding.
+- Efficiency. Interestingly, CNN-AEs require large dimensions at high resolutions, which are not efficient.
+
+Some recent work starts to use ViTs for auto-encoders, including [TiTok](https://arxiv.org/abs/2406.07550), [ViTok](https://arxiv.org/pdf/2501.09755), and [MAEToK](https://arxiv.org/pdf/2502.03444). If we can encode an image or a video to a 1D sequence of tokens, in a coarse-to-fine manner, auto-regressive methods may fit better, and the latent space can be aligned with text for better multi-modality understanding. The work ([Semanticist](https://arxiv.org/pdf/2503.08685)) moves one step ahead towards this direction.
+
+### MAEToK
+
+MAEToK uses [MAE](https://arxiv.org/pdf/2111.06377) to learn latent tokens for generation. In its implementation, the token masking is different from the original MAE. Specifically, MAE discards masked tokens, and only sends remaining tokens for transformers. MAEToK sends all pixel tokens to transformers with masked tokens replaced by a learnable token. I followed the original MAE masking in my implementation. Another thing to be noted is that MAEToK builds AE and VAE on top of VQ. 
