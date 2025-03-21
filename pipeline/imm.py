@@ -123,12 +123,19 @@ class IMM():
         noise_groups = noise.tensor_split(num_groups)
         loss = 0.0
         for x_group, noise_group in zip(x_groups, noise_groups):
+            # for each group, sample s, r, t
             s, r, t = self.scheduler.sample_srt()
+            
+            # construct two training samples
             x_t = self.ddim(noise_group, x_group, t, 1)
             x_r = self.ddim(x_t, x_group, r, t)
+
+            # run one-step denoising
             f_t = self.f_theta(self.model, x_t, s, t)
             with torch.no_grad():
                 f_r_prev = self.f_theta(self.prev_model, x_r, s, r)
+            
+            # compute loss
             w = self.weight(s, t) / (self.group_size ** 2)
             local_loss = 0.0
             for j in range(self.group_size):

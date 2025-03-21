@@ -41,5 +41,4 @@ MAEToK uses [MAE](https://arxiv.org/pdf/2111.06377) to learn latent tokens for g
 
 ### Inductive Moment Matching
 
-[Inductive Moment Matching (IMM)](https://arxiv.org/abs/2503.07565) is a new class of generative models. It extends [Consistency Models](https://arxiv.org/abs/2303.01469) by using stochastic interpolants and stable sample-based divergence
-estimators. With a single-stage training, it can be sampled efficiently with one or a few steps. The official implementation doesn't provide training code, and there are some unspecified parameters in the paper. My implementation tries to follow the algorithms provided in the paper, and aims to help people to understand the work.
+[Inductive Moment Matching (IMM)](https://arxiv.org/abs/2503.07565) is a new class of generative models. The training is based on mathematical induction. For s < r < t, it matches two distributions from r, t to s by minimizing their divergence. To make the training stable, it uses stable sample-based divergence estimators, i.e. moment matching. With a single-stage training, it can be sampled efficiently with one or a few steps. The official implementation doesn't provide training code, and there are some unspecified parameters in the paper. My implementation tries to follow the algorithms provided in the paper, and aims to help people to understand the work.

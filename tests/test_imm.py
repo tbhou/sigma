@@ -5,13 +5,12 @@ import unittest
 from pipeline.imm import IMM, ConsineScheduler
 
 
-
 class DummyModel(nn.Module):
 
     def forward(self, x, s, t):
         del s, t
         return torch.rand(*x.shape)
-    
+
 
 class TestIMM(unittest.TestCase):
 
