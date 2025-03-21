@@ -35,3 +35,11 @@ Some recent work starts to use ViTs for auto-encoders, including [TiTok](https:/
 ### MAEToK
 
 MAEToK uses [MAE](https://arxiv.org/pdf/2111.06377) to learn latent tokens for generation. In its implementation, the token masking is different from the original MAE. Specifically, MAE discards masked tokens, and only sends remaining tokens for transformers. MAEToK sends all pixel tokens to transformers with masked tokens replaced by a learnable token. I followed the original MAE masking in my implementation. Another thing to be noted is that MAEToK builds AE and VAE on top of VQ. 
+
+
+## Diffusion Sampling
+
+### Inductive Moment Matching
+
+[Inductive Moment Matching (IMM)](https://arxiv.org/abs/2503.07565) is a new class of generative models. It extends [Consistency Models](https://arxiv.org/abs/2303.01469) by using stochastic interpolants and stable sample-based divergence
+estimators. With a single-stage training, it can be sampled efficiently with one or a few steps. The official implementation doesn't provide training code, and there are some unspecified parameters in the paper. My implementation tries to follow the algorithms provided in the paper, and aims to help people to understand the work.
