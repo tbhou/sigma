@@ -14,7 +14,12 @@ Token compression provides an overview of the entire sequence. Uncompressed toke
 
 ### Multi-Token Attention
 
-[MultiToken Attention](https://arxiv.org/pdf/2504.00927) adds convolutions when computing attention scores. Convolutions are applied on queries, keys, and heads. I use group convolution to implement qk pre-softmax and post-softmax convolutions, which are independent for different heads. I use a linear layer to implement head mixing convolution, conducted in each group of heads. Since convolution is local, the multi tokens are grouped in a vicinity.
+[Multi-Token Attention](https://arxiv.org/pdf/2504.00927) adds convolutions when computing attention scores. Convolutions are applied on queries, keys, and heads. I use group convolution to implement qk pre-softmax and post-softmax convolutions, which are independent for different heads. I use a linear layer to implement head mixing convolution, conducted in each group of heads. 
+
+**Consideration**
+
+Since convolution is local, the multi tokens are only grouped in a vicinity. And convolutions are computed on tokens flattened from 3D. 
+
 
 ## MoE
 
