@@ -12,6 +12,10 @@ This repo collects some latest research work of Generative AI. It provides simpl
 
 Token compression provides an overview of the entire sequence. Uncompressed token blocks are then selected based on their attentions scores. A recent work [DART](https://www.arxiv.org/abs/2502.11494) proposes to consider duplication in token selection. It first selects a fewer pivotal tokens, and then similar token to the pivotal ones are ignored in the token selection. This allows to select more diverse tokens. In another work [DivPrune](https://arxiv.org/abs/2503.02175), the problem is formulated a Max–Min Diversity Problem (MMDP). It'll be interesting to see how these techniques work for generation tasks.
 
+### Multi-Token Attention
+
+[MultiToken Attention](https://arxiv.org/pdf/2504.00927) adds convolutions when computing attention scores. Convolutions are applied on queries, keys, and heads. I use group convolution to implement qk pre-softmax and post-softmax convolutions, which are independent for different heads. I use a linear layer to implement head mixing convolution, conducted in each group of heads. Since convolution is local, the multi tokens are grouped in a vicinity.
+
 ## MoE
 
 ### DeepSeekMoE

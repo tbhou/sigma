@@ -224,3 +224,68 @@ class SparseAttention3D(SparseAttention):
         num_blocks = x.shape[1]        
         pe = repeat(self.intrablock_pe, 'bf bh bw h d -> w (bf bh bw) h d', w = num_blocks)
         return x + pe
+
+
+class RMSNorm(nn.Module):
+    def __init__(self, eps=1e-5):
+        super().__init__()
+        self.gamma = 1
+        self.eps=eps
+
+    def forward(self, x):
+        var = x.pow(2).mean(dim=-1, keepdim=True)
+        y = x / torch.sqrt(var + self.eps)
+        return y * self.gamma
+
+
+class MultiTokenAttention(Attention):
+    """Sparse multi-head attention.
+    
+    An implementation of "Multi-Token Attention" (MTA) for video generation.
+    Since video generation uses full attention without masking, we skip the
+    0- and infinity- masking in MTA.
+    """
+    def __init__(
+        self,
+        dim: int,
+        heads: int,
+        kernel_size: Tuple[int, int, int],
+    ):
+        super().__init__(dim, heads)
+        self.qk_kernel = kernel_size[0:2]
+        self.h_kernel = kernel_size[-1]
+        self.qk_pre_conv = nn.Conv2d(
+            self.dim_head,
+            self.dim_head,
+            kernel_size=self.qk_kernel,
+            stride=1,
+            padding='same',
+            groups=self.dim_head,
+        )
+        self.qk_post_conv = nn.Conv2d(
+            self.dim_head,
+            self.dim_head,
+            kernel_size=self.qk_kernel,
+            stride=1,
+            padding='same',
+            groups=self.dim_head,
+        )
+        # head mixing is a linear layer
+        self.head_conv = nn.Linear(self.h_kernel, self.h_kernel)
+        self.group_norm = RMSNorm()
+    
+    def attend(self, q, k, v):
+        scale = q.shape[-1] ** -0.5
+        score = torch.einsum('bqhd,bkhd->bhqk', q, k) * scale
+        score = self.qk_pre_conv(score)
+        score = torch.softmax(score, dim=-1)
+        score = self.qk_post_conv(score)  # [bhqk]
+        group = self.heads // self.h_kernel
+        score = rearrange(score, 'b (g h) q k -> b q k g h', g=group, h=self.h_kernel)
+        score = self.head_conv(score)
+        score = rearrange(score, 'b q k g h -> b (g h) q k')
+        score = torch.dropout(score, p=self.dropout_rate, train=self.training)
+        y = torch.einsum('bhqk,bkhd->bqhd', score, v)
+        y = self.group_norm(y)
+        # skip depth-wise scaling
+        return y, score
