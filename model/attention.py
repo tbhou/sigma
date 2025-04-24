@@ -4,7 +4,7 @@ from typing import Tuple
 import torch
 from torch import nn
 
-from einops import rearrange, repeat
+from einops import rearrange
 from einops.layers.torch import Rearrange
 
 from model.rope import apply_rope
@@ -107,9 +107,8 @@ class SparseAttention(Attention):
         assert num_selected_blocks > 0
         self.num_selected_blocks = num_selected_blocks
 
-        # combine strategy: b n d -> b n sh -> b n s
         self.to_combine = nn.Sequential(
-            nn.Linear(dim, num_selected_blocks * heads),
+            nn.Linear(dim, 2 * heads),  # two attentions
             nn.Sigmoid(),
             Rearrange('b n (s h) -> b n s h', h = heads)
         )
@@ -118,8 +117,7 @@ class SparseAttention(Attention):
         return rearrange(x, 'b (w n) h d -> b w n h d', n = self.block_size)
 
     def add_block_pe(self, x):
-        num_blocks = x.shape[1]
-        pe = repeat(self.intrablock_pe, 'n h d -> w n h d', w = num_blocks)
+        pe = self.intrablock_pe[None, ...].repeat(x.shape[1], 1, 1, 1)
         return x + pe
 
     def forward(self, x, freqs_cis=None, latent_shape=None):
@@ -153,15 +151,14 @@ class SparseAttention(Attention):
 
         sk = self.split_blocks(sk, latent_shape)  # (b, w, n, h, d)
         sv = self.split_blocks(v, latent_shape)  # (b, w, n, h, d)
-        sk = repeat(sk, 'b w n h d -> b q w n h d', q = selected_indices.shape[2])
-        sv = repeat(sv, 'b w n h d -> b q w n h d', q = selected_indices.shape[2])
+        si = selected_indices.shape[2]
+        sk = sk[:, None, ...].repeat(1, si, 1, 1, 1, 1)  # (b q w n h d)
+        sv = sv[:, None, ...].repeat(1, si, 1, 1, 1, 1)
 
-        selected_indices = repeat(
-            selected_indices,
-            'b h q s -> b q s n h d',
-            n = sk.shape[-3],
-            d = sk.shape[-1],
-        )
+        selected_indices = selected_indices.movedim(1, -1)[:, :, :, None, :, None].repeat(
+            1, 1, 1, sk.shape[-3], 1, sk.shape[-1]
+        )  # 'b h q s -> b q s n h d'
+
         sk = sk.gather(2, selected_indices)  # b q s n h d
         sv = sv.gather(2, selected_indices)
 
@@ -221,15 +218,15 @@ class SparseAttention3D(SparseAttention):
         return x
     
     def add_block_pe(self, x):
-        num_blocks = x.shape[1]        
-        pe = repeat(self.intrablock_pe, 'bf bh bw h d -> w (bf bh bw) h d', w = num_blocks)
+        h, d = self.intrablock_pe.shape[-2:]
+        pe = self.intrablock_pe.reshape(-1, h, d)[None, ...].repeat(x.shape[1], 1, 1, 1)
         return x + pe
 
 
 class RMSNorm(nn.Module):
-    def __init__(self, eps=1e-5):
+    def __init__(self, dim, eps=1e-5):
         super().__init__()
-        self.gamma = 1
+        self.gamma = nn.Parameter(torch.ones(dim))
         self.eps=eps
 
     def forward(self, x):
@@ -272,7 +269,7 @@ class MultiTokenAttention(Attention):
         )
         # head mixing is a linear layer
         self.head_conv = nn.Linear(self.h_kernel, self.h_kernel)
-        self.group_norm = RMSNorm()
+        self.group_norm = RMSNorm(dim // heads)
     
     def attend(self, q, k, v):
         scale = q.shape[-1] ** -0.5

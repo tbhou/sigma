@@ -46,8 +46,7 @@ def apply_rope(
     xq_ = torch.view_as_complex(
         xq.reshape(*xq.shape[:-1], -1, 2)
     )  # [B, S, H, D//2]
-    S = xq_.shape[1]
-    freqs_cis = freqs_cis.view(1, S, 1, -1)  # [S, nD//2] --> [1, S, 1, nD//2]
+    freqs_cis = freqs_cis[None, :, None, :]  # [1, S, 1, D//2]
     # view_as_real will expand [..., D/2](complex) to [..., D/2, 2](real)
     xq_out = torch.view_as_real(xq_ * freqs_cis).flatten(3).type_as(xq)
     xk_ = torch.view_as_complex(

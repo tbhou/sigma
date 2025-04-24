@@ -24,7 +24,7 @@ class TestAttention(unittest.TestCase):
 
     def test_sparse_attention(self):
         dim, head = 16, 4
-        attn = SparseAttention(dim, head, 4, 2)
+        attn = SparseAttention(dim, head, 4, 3)
         x = torch.randn(1, 32, dim)
         freqs_cis = torch.randn(32, dim // (head * 2))
         y = attn(x, freqs_cis=freqs_cis)
